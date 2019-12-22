@@ -14,6 +14,7 @@ class MusicPack:
     self.__current_track = {
       'hour': -1,
       'obj': None,
+      'volume': 100,
     }
     self.__device = None
     self.__tracks = dict()
@@ -99,10 +100,19 @@ class MusicPack:
     
     if self.__current_track['obj'] is not None:
       self.__current_track['obj'].Stop()
+      self.__current_track['obj'].Free()
       self.__current_track['obj'] = None
     
     track = self.__tracks.get(hour, None)
 
     if track:
       self.__current_track['obj'] = self.__device.CreateStreamFromFile(track)
+      self.__current_track['obj'].Volume.Set(self.__current_track['volume']/100)
       self.__current_track['obj'].Play(True)
+
+  def setVolume(self, volume):
+  
+    self.__current_track['volume'] = volume
+    
+    if self.__current_track['obj'] is not None:
+      self.__current_track['obj'].Volume.Set(volume/100)

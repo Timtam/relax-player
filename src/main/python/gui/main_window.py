@@ -4,7 +4,7 @@ import os.path
 
 from Bass4Py.BASS import BASS
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QLabel
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QLabel, QSlider
 from music_pack import MusicPack, MusicPackException
 from storage import Storage
 
@@ -27,11 +27,24 @@ class MainWindow(QWidget):
     self.pack_selector_label = QLabel('Select music pack', self)
     self.layout.addWidget(self.pack_selector_label)
 
-    self.pack_selector = QComboBox()
+    self.pack_selector = QComboBox(self)
     self.pack_selector.setEditable(False)
     self.pack_selector.activated.connect(self.changeMusicPack)
     self.layout.addWidget(self.pack_selector)
     self.pack_selector_label.setBuddy(self.pack_selector)
+
+    self.volume_control_label = QLabel('Volume', self)
+    self.layout.addWidget(self.volume_control_label)
+    
+    self.volume_control = QSlider(self)
+    self.volume_control.setMinimum(0)
+    self.volume_control.setMaximum(100)
+    self.volume_control.setSingleStep(1)
+    self.volume_control.setPageStep(10)
+    self.volume_control.setValue(75)
+    self.volume_control.valueChanged.connect(self.volumeChanged)
+    self.layout.addWidget(self.volume_control)
+    self.volume_control_label.setBuddy(self.volume_control)
 
     self.setLayout(self.layout)
 
@@ -103,9 +116,16 @@ class MainWindow(QWidget):
       self.current_pack['obj'] = pack
 
       pack.play()
+      pack.setVolume(self.volume_control.value())
     else:
       self.current_pack['obj'] = None
 
   def updateMusicPack(self):
     if self.current_pack['obj'] is not None:
       self.current_pack['obj'].setHour(datetime.datetime.now().hour)
+
+  def volumeChanged(self, *args, **kwargs):
+    volume = self.volume_control.value()
+    
+    if self.current_pack['obj'] is not None:
+      self.current_pack['obj'].setVolume(volume)
