@@ -4,7 +4,7 @@ import os.path
 
 from Bass4Py.BASS import BASS
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QLabel
 from music_pack import MusicPack, MusicPackException
 from storage import Storage
 
@@ -24,10 +24,14 @@ class MainWindow(QWidget):
 
     self.layout = QHBoxLayout()
 
+    self.pack_selector_label = QLabel('Select music pack', self)
+    self.layout.addWidget(self.pack_selector_label)
+
     self.pack_selector = QComboBox()
     self.pack_selector.setEditable(False)
     self.pack_selector.activated.connect(self.changeMusicPack)
     self.layout.addWidget(self.pack_selector)
+    self.pack_selector_label.setBuddy(self.pack_selector)
 
     self.setLayout(self.layout)
 
