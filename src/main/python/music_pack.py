@@ -4,6 +4,10 @@ import os.path
 from Bass4Py.BASS import BASS
 from Bass4Py.constants import STREAM
 
+STATE_STOPPED = 0
+STATE_PLAYING = 1
+STATE_FADING = 2
+
 class MusicPackException(Exception):
   pass
 
@@ -19,7 +23,7 @@ class MusicPack:
     }
     self.__device = None
     self.__tracks = dict()
-    self.__playing = False
+    self.__state = STATE_STOPPED
 
     self._load_pack()
 
@@ -65,10 +69,10 @@ class MusicPack:
     return os.path.join(self.__parent_dir, self.__name)
 
   def play(self):
-    if self.__playing:
+    if self.__state != STATE_STOPPED:
       return
     
-    self.__playing = True
+    self.__state = STATE_PLAYING
 
     if self.__device is None:
       bass = BASS()
@@ -77,11 +81,7 @@ class MusicPack:
     if self.__current_track['hour'] >= 0:
       hour = self.__current_track['hour']
       
-      if self.__current_track['obj'] is not None:
-        self.__current_track['obj'].Stop()
-        self.__current_track['obj'] = None
-      
-      self.__current_track['hour'] = -1
+      self.setHour(-1)
       
       self.setHour(hour)
 
@@ -90,19 +90,22 @@ class MusicPack:
     
     if self.__current_track['obj'] is not None:
       self.__current_track['obj'].Stop()
+      self.__current_track['obj'].Free()
       self.__current_track['obj'] = None
+
+    self.__state = STATE_STOPPED
 
   def setHour(self, hour):
 
     if self.__current_track['hour'] == hour:
       return
     
+    self.stop()
+
+    if hour == -1:
+      return
+
     self.__current_track['hour'] = hour
-    
-    if self.__current_track['obj'] is not None:
-      self.__current_track['obj'].Stop()
-      self.__current_track['obj'].Free()
-      self.__current_track['obj'] = None
     
     track = self.__tracks.get(hour, None)
 
