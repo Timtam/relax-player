@@ -2,6 +2,7 @@ import os
 import os.path
 
 from Bass4Py.BASS import BASS
+from Bass4Py.constants import STREAM
 
 class MusicPackException(Exception):
   pass
@@ -106,7 +107,7 @@ class MusicPack:
     track = self.__tracks.get(hour, None)
 
     if track:
-      self.__current_track['obj'] = self.__device.CreateStreamFromFile(track)
+      self.__current_track['obj'] = self.__device.CreateStreamFromFile(track, STREAM.LOOP)
       self.__current_track['obj'].Volume.Set(self.__current_track['volume']/100)
       self.__current_track['obj'].Play(True)
 
