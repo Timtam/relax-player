@@ -3,6 +3,7 @@ import os.path
 
 from Bass4Py.BASS import BASS
 from Bass4Py.constants import STREAM
+from Bass4Py.BASS.syncs import Slide
 
 STATE_STOPPED = 0
 STATE_PLAYING = 1
@@ -24,6 +25,7 @@ class MusicPack:
     self.__device = None
     self.__tracks = dict()
     self.__state = STATE_STOPPED
+    self.__sync = None
 
     self._load_pack()
 
@@ -85,38 +87,63 @@ class MusicPack:
       
       self.setHour(hour)
 
-  def stop(self):
-    self.__current_track['hour'] = -1
-    
+  def stop(self, stream_only = False):
     if self.__current_track['obj'] is not None:
       self.__current_track['obj'].Stop()
       self.__current_track['obj'].Free()
       self.__current_track['obj'] = None
+      self.__sync = None
 
-    self.__state = STATE_STOPPED
+    if not stream_only:
+      self.__current_track['hour'] = -1
+      self.__state = STATE_STOPPED
 
   def setHour(self, hour):
 
     if self.__current_track['hour'] == hour:
       return
     
-    self.stop()
-
-    if hour == -1:
-      return
-
     self.__current_track['hour'] = hour
     
+    if hour == -1:
+      self.stop()
+      return
+
     track = self.__tracks.get(hour, None)
 
     if track:
-      self.__current_track['obj'] = self.__device.CreateStreamFromFile(track, STREAM.LOOP)
-      self.__current_track['obj'].Volume.Set(self.__current_track['volume']/100)
-      self.__current_track['obj'].Play(True)
+
+      def setNewTrack(*args, **kwargs):
+        self.stop(True)
+
+        self.__current_track['obj'] = self.__device.CreateStreamFromFile(track, STREAM.LOOP)
+        self.__current_track['obj'].Volume.Set(self.__current_track['volume']/100)
+        self.__current_track['obj'].Play(True)
+        self.__state = STATE_PLAYING
+        self.__sync = None
+
+      if self.__current_track['obj'] is not None:
+        sync = Slide()
+        sync.Onetime = True
+        sync.Callback = setNewTrack
+        self.__current_track['obj'].SetSync(sync)
+        self.__sync = sync
+        
+        self.__state = STATE_FADING
+        self.__current_track['obj'].Volume.Slide(0, 2000)
+
+      else:
+        setNewTrack()
+
+    else:
+      self.stop()
 
   def setVolume(self, volume):
   
     self.__current_track['volume'] = volume
     
+    if self.__state == STATE_FADING:
+      return
+
     if self.__current_track['obj'] is not None:
       self.__current_track['obj'].Volume.Set(volume/100)
