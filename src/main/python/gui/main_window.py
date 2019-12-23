@@ -4,19 +4,54 @@ import os.path
 
 from Bass4Py.BASS import BASS
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QLabel, QSlider
+from PyQt5.QtWidgets import (
+  QWidget,
+  QHBoxLayout, 
+  QComboBox, 
+  QLabel, 
+  QSlider, 
+  QLineEdit,
+  QVBoxLayout)
+
 from config import MUSIC_PACKS_FOLDER
 from music_pack import MusicPack, MusicPackException
 from storage import Storage
 from weather import (
   getLocation,
-  getCurrentWeatherState,
+  getCurrentWeather,
   getClearStates,
   getRainStates,
   getSnowStates,
   WEATHER_STATE_CLEAR,
   WEATHER_STATE_RAIN,
   WEATHER_STATE_SNOW)
+
+class WeatherWidget(QWidget):
+
+  def __init__(self, *args, **kwargs):
+    QWidget.__init__(self, *args, **kwargs)
+
+    self.layout = QVBoxLayout(self)
+
+    self.title_label = QLabel('Weather', self)
+    self.layout.addWidget(self.title_label)
+
+    self.location_label = QLabel('Location', self)
+    self.layout.addWidget(self.location_label)
+    
+    self.location_text = QLineEdit(self)
+    self.location_text.setReadOnly(True)
+    self.location_label.setBuddy(self.location_text)
+    self.layout.addWidget(self.location_text)
+
+    self.setLayout(self.layout)
+
+  def setLocation(self, location):
+  
+    if self.location_text.text():
+      return
+    
+    self.location_text.setText(location)
 
 class MainWindow(QWidget):
 
@@ -32,7 +67,7 @@ class MainWindow(QWidget):
     self.weather_state = WEATHER_STATE_CLEAR
     self.setWindowTitle('RelaxPlayer')
 
-    self.layout = QHBoxLayout()
+    self.layout = QHBoxLayout(self)
 
     self.pack_selector_label = QLabel('Select music pack', self)
     self.layout.addWidget(self.pack_selector_label)
@@ -55,6 +90,9 @@ class MainWindow(QWidget):
     self.volume_control.valueChanged.connect(self.volumeChanged)
     self.layout.addWidget(self.volume_control)
     self.volume_control_label.setBuddy(self.volume_control)
+
+    self.weather_display = WeatherWidget(self)
+    self.layout.addWidget(self.weather_display)
 
     self.setLayout(self.layout)
 
@@ -154,7 +192,7 @@ class MainWindow(QWidget):
 
     if self.location is not None:
 
-      weather = getCurrentWeatherState(*self.location)
+      weather = getCurrentWeather(*self.location)
 
       if weather:
       
@@ -167,6 +205,8 @@ class MainWindow(QWidget):
           
         if state == WEATHER_STATE_CLEAR and not weather[0] in getClearStates():
           print('unknown weather condition {condition} detected, assuming clear condition'.format(condition = weather[0]))
+
+        self.weather_display.setLocation(weather[2])
 
         self.weather_state = state
         

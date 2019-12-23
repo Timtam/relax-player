@@ -25,9 +25,9 @@ def getLocation():
       
   return (parsed['latitude'], parsed['longitude'], )
 
-# returns tuple with state descriptor (see open weather map), and icon url
+# returns tuple with state descriptor (see open weather map), icon url and location name
 # might return None if an error occurs (e.g. the api key is incorrect)
-def getCurrentWeatherState(latitude, longitude):
+def getCurrentWeather(latitude, longitude):
   # composing the OpenWeatherMap url query
   query = {
     'lat': latitude,
@@ -56,6 +56,7 @@ def getCurrentWeatherState(latitude, longitude):
     return (
       parsed['weather'][0]['main'],
       'https://openweathermap.org/img/wn/{icon}@2x.png'.format(icon=parsed['weather'][0]['icon']),
+      parsed['name'],
     )
 
   except urllib.error.HTTPError:
