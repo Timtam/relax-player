@@ -98,8 +98,14 @@ class MusicPack:
     if (len(self.__tracks[WEATHER_STATE_CLEAR]) + len(self.__tracks[WEATHER_STATE_RAIN]) + len(self.__tracks[WEATHER_STATE_SNOW])) == 0:
       raise MusicPackException('no tracks found for music pack {name}'.format(name = self.__name))
 
-  def _get_track(self, hour, state):
+  def _get_track(self, hour = None, state = None):
   
+    if hour is None:
+      hour = self.__current_track['hour']
+      
+    if state is None:
+      state = self.__weather_state
+
     if not state in self.__tracks:
       raise MusicPackException('unknown weather state')
     
@@ -140,19 +146,12 @@ class MusicPack:
     if not stream_only:
       self.__current_track['hour'] = -1
       self.__state = STATE_STOPPED
+      self.__weather_state = WEATHER_STATE_CLEAR
 
-  def setHour(self, hour):
+  def _set_track(self, track):
 
-    if self.__current_track['hour'] == hour:
+    if track and not self.__current_track['obj'] is None and self.__current_track['obj'].Name == track:
       return
-    
-    self.__current_track['hour'] = hour
-    
-    if hour == -1:
-      self.stop()
-      return
-
-    track = self._get_track(hour, self.__weather_state)
 
     if track:
 
@@ -181,6 +180,21 @@ class MusicPack:
     else:
       self.stop()
 
+  def setHour(self, hour):
+
+    if self.__current_track['hour'] == hour:
+      return
+    
+    self.__current_track['hour'] = hour
+    
+    if hour == -1:
+      self.stop()
+      return
+
+    track = self._get_track(hour, self.__weather_state)
+
+    self._set_track(track)
+
   def setVolume(self, volume):
   
     self.__current_track['volume'] = volume
@@ -190,3 +204,19 @@ class MusicPack:
 
     if self.__current_track['obj'] is not None:
       self.__current_track['obj'].Volume.Set(volume/100)
+
+  def setWeatherState(self, state):
+  
+    if state == self.__weather_state:
+      return
+
+    if state not in self.__tracks:
+      raise MusicPackException('invalid weather state')
+    
+    self.__weather_state = state
+    
+    if not self.__current_track['obj'] is None:
+
+      track = self._get_track()
+    
+      self._set_track(track)

@@ -8,7 +8,15 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QLabel, QSlider
 from config import MUSIC_PACKS_FOLDER
 from music_pack import MusicPack, MusicPackException
 from storage import Storage
-from weather import getLocation, getCurrentWeatherState
+from weather import (
+  getLocation,
+  getCurrentWeatherState,
+  getClearStates,
+  getRainStates,
+  getSnowStates,
+  WEATHER_STATE_CLEAR,
+  WEATHER_STATE_RAIN,
+  WEATHER_STATE_SNOW)
 
 class MainWindow(QWidget):
 
@@ -21,6 +29,7 @@ class MainWindow(QWidget):
       'obj': None, # pack object
     }
     self.location = None
+    self.weather_state = WEATHER_STATE_CLEAR
     self.setWindowTitle('RelaxPlayer')
 
     self.layout = QHBoxLayout()
@@ -70,6 +79,8 @@ class MainWindow(QWidget):
     device.Init(44100, 0, -1)
 
     self.indexMusicPacks()
+
+    self.updateWeatherInformation()
 
   def indexMusicPacks(self):
 
@@ -122,6 +133,7 @@ class MainWindow(QWidget):
 
       pack.play()
       pack.setVolume(self.volume_control.value())
+      pack.setWeatherState(self.weather_state)
     else:
       self.current_pack['obj'] = None
 
@@ -141,4 +153,22 @@ class MainWindow(QWidget):
       self.location = getLocation()
 
     if self.location is not None:
-      getCurrentWeatherState(*self.location)
+
+      weather = getCurrentWeatherState(*self.location)
+
+      if weather:
+      
+        state = WEATHER_STATE_CLEAR
+
+        if weather[0] in getRainStates():
+          state = WEATHER_STATE_RAIN
+        elif weather[0] in getSnowStates():
+          state = WEATHER_STATE_SNOW
+          
+        if state == WEATHER_STATE_CLEAR and not weather[0] in getClearStates():
+          print('unknown weather condition {condition} detected, assuming clear condition'.format(condition = weather[0]))
+
+        self.weather_state = state
+        
+        if not self.current_pack['obj'] is None:
+          self.current_pack['obj'].setWeatherState(state)
