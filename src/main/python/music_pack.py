@@ -5,6 +5,8 @@ from Bass4Py.BASS import BASS
 from Bass4Py.constants import STREAM
 from Bass4Py.BASS.syncs import Slide
 
+from weather import WEATHER_STATE_CLEAR, WEATHER_STATE_RAIN, WEATHER_STATE_SNOW
+
 STATE_STOPPED = 0
 STATE_PLAYING = 1
 STATE_FADING = 2
@@ -23,49 +25,90 @@ class MusicPack:
       'volume': 100,
     }
     self.__device = None
-    self.__tracks = dict()
+    self.__tracks = {
+      WEATHER_STATE_CLEAR: dict(),
+      WEATHER_STATE_RAIN: dict(),
+      WEATHER_STATE_SNOW: dict(),
+    }
+    self.__weather_state = WEATHER_STATE_CLEAR
     self.__state = STATE_STOPPED
     self.__sync = None
 
     self._load_pack()
+
+  def _load_subpack(self, state):
+
+    indicator = None
+    
+    if state == WEATHER_STATE_CLEAR:
+      indicator = 'clear'
+    elif state == WEATHER_STATE_RAIN:
+      indicator = 'rain'
+    elif state == WEATHER_STATE_SNOW:
+      indicator = 'snow'
+    
+    if indicator is None:
+      raise MusicPackException('invalid weather state: {state}'.format(state = state))
+
+    state_dir = os.path.join(self.getDirectory(), indicator)
+
+    if not os.path.exists(state_dir) or not os.path.isdir(state_dir):
+      return
+
+    am_dir = os.path.join(state_dir, 'am')
+    pm_dir = os.path.join(state_dir, 'pm')
+
+    if os.path.exists(am_dir) and os.path.isdir(am_dir):
+
+      am_tracks = os.listdir(am_dir)
+
+      for t in am_tracks:
+        file, ext = os.path.splitext(t)
+
+        i = int(file)
+      
+        if i == 12:
+          i = 0
+      
+        self.__tracks[state][i] = os.path.join(am_dir, t)
+      
+    if os.path.exists(pm_dir) and os.path.isdir(pm_dir):
+
+      pm_tracks = os.listdir(pm_dir)
+
+      for t in pm_tracks:
+        file, ext = os.path.splitext(t)
+
+        i = int(file)
+      
+        if i != 12:
+          i += 12
+      
+        self.__tracks[state][i] = os.path.join(pm_dir, t)
 
   def _load_pack(self):
 
     if not os.path.exists(self.getDirectory()) or not os.path.isdir(self.getDirectory()):
       raise MusicPackException('path doesn\'t exist or is no directory')
 
-    am_dir = os.path.join(self.getDirectory(), 'am')
-    pm_dir = os.path.join(self.getDirectory(), 'pm')
+    self._load_subpack(WEATHER_STATE_CLEAR)
+    self._load_subpack(WEATHER_STATE_RAIN)
+    self._load_subpack(WEATHER_STATE_SNOW)
 
-    if not os.path.exists(am_dir) or not os.path.isdir(am_dir):
-      raise MusicPackException('no am folder found within music pack')
+    if (len(self.__tracks[WEATHER_STATE_CLEAR]) + len(self.__tracks[WEATHER_STATE_RAIN]) + len(self.__tracks[WEATHER_STATE_SNOW])) == 0:
+      raise MusicPackException('no tracks found for music pack {name}'.format(name = self.__name))
 
-    if not os.path.exists(pm_dir) or not os.path.isdir(pm_dir):
-      raise MusicPackException('no pm folder found within music pack')
-
-    am_tracks = os.listdir(am_dir)
-
-    for t in am_tracks:
-      file, ext = os.path.splitext(t)
-
-      i = int(file)
-      
-      if i == 12:
-        i = 0
-      
-      self.__tracks[i] = os.path.join(am_dir, t)
-      
-    pm_tracks = os.listdir(pm_dir)
-
-    for t in pm_tracks:
-      file, ext = os.path.splitext(t)
-
-      i = int(file)
-      
-      if i != 12:
-        i += 12
-      
-      self.__tracks[i] = os.path.join(pm_dir, t)
+  def _get_track(self, hour, state):
+  
+    if not state in self.__tracks:
+      raise MusicPackException('unknown weather state')
+    
+    track = self.__tracks[state].get(hour, None)
+    
+    if not track and state != WEATHER_STATE_CLEAR:
+      track = self.__tracks[WEATHER_STATE_CLEAR].get(hour, None)
+    
+    return track
 
   def getDirectory(self):
     return os.path.join(self.__parent_dir, self.__name)
@@ -109,7 +152,7 @@ class MusicPack:
       self.stop()
       return
 
-    track = self.__tracks.get(hour, None)
+    track = self._get_track(hour, self.__weather_state)
 
     if track:
 

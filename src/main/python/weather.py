@@ -5,6 +5,11 @@ import urllib.request
 
 from config import LOCATION_RETRIEVAL_URL, OPEN_WEATHER_MAP_API_KEY
 
+# different states for music
+WEATHER_STATE_CLEAR = 0
+WEATHER_STATE_RAIN = 1
+WEATHER_STATE_SNOW = 2
+
 # returns tuple with latitude, longitude
 # might return None if failure
 def getLocation():
@@ -60,6 +65,14 @@ def getClearStates():
   return (
     'Clouds',
     'Clear',
+    'Mist',
+    'Smoke',
+    'Haze',
+    'Dust',
+    'Fog',
+    'Sand',
+    'Ash',
+    'Squall',
   )
 
 def getRainStates():
