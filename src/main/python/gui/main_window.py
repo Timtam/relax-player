@@ -5,12 +5,12 @@ import os.path
 from Bass4Py.BASS import BASS
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QComboBox, QLabel, QSlider
+from config import MUSIC_PACKS_FOLDER
 from music_pack import MusicPack, MusicPackException
 from storage import Storage
+from weather import getLocation, getCurrentWeatherState
 
 class MainWindow(QWidget):
-
-  __music_packs_folder = 'Packs'
 
   def __init__(self, application_context):
     QWidget.__init__(self)
@@ -20,6 +20,7 @@ class MainWindow(QWidget):
       'index': 0, # index in combo box
       'obj': None, # pack object
     }
+    self.location = None
     self.setWindowTitle('RelaxPlayer')
 
     self.layout = QHBoxLayout()
@@ -57,6 +58,10 @@ class MainWindow(QWidget):
     self.update_music_pack_timer.timeout.connect(self.updateMusicPack)
     self.update_music_pack_timer.start(1000)
 
+    self.update_weather_information_timer = QTimer(self)
+    self.update_weather_information_timer.timeout.connect(self.updateWeatherInformation)
+    self.update_weather_information_timer.start(6000)
+
   def initialize(self):
 
     bass = BASS()
@@ -75,7 +80,7 @@ class MainWindow(QWidget):
 
     for r in resource_folders:
 
-      packs_dir = os.path.join(r, self.__music_packs_folder)
+      packs_dir = os.path.join(r, MUSIC_PACKS_FOLDER)
 
       if not os.path.exists(packs_dir) or not os.path.isdir(packs_dir):
         continue
@@ -129,3 +134,11 @@ class MainWindow(QWidget):
     
     if self.current_pack['obj'] is not None:
       self.current_pack['obj'].setVolume(volume)
+
+  def updateWeatherInformation(self):
+    
+    if self.location is None:
+      self.location = getLocation()
+
+    if self.location is not None:
+      getCurrentWeatherState(*self.location)
