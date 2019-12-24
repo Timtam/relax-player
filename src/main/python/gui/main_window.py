@@ -1,6 +1,8 @@
 import datetime
 import os
 import os.path
+import urllib.error
+import urllib.request
 
 from Bass4Py.BASS import BASS
 from PyQt5.QtCore import QTimer
@@ -12,6 +14,7 @@ from PyQt5.QtWidgets import (
   QSlider, 
   QLineEdit,
   QVBoxLayout)
+from PyQt5.QtGui import QPixmap
 
 from config import MUSIC_PACKS_FOLDER
 from music_pack import MusicPack, MusicPackException
@@ -36,6 +39,9 @@ class WeatherWidget(QWidget):
     self.title_label = QLabel('Weather', self)
     self.layout.addWidget(self.title_label)
 
+    self.weather_icon = QLabel(self)
+    self.layout.addWidget(self.weather_icon)
+
     self.location_label = QLabel('Location', self)
     self.layout.addWidget(self.location_label)
     
@@ -52,6 +58,22 @@ class WeatherWidget(QWidget):
       return
     
     self.location_text.setText(location)
+
+  def setWeatherIconFromURL(self, url):
+  
+    try:
+    
+      req = urllib.request.urlopen(url)
+      
+      data = req.read()
+      
+      map = QPixmap()
+      map.loadFromData(data)
+
+      self.weather_icon.setPixmap(map)
+      
+    except urllib.error.HTTPError:
+      pass
 
 class MainWindow(QWidget):
 
@@ -205,6 +227,8 @@ class MainWindow(QWidget):
           
         if state == WEATHER_STATE_CLEAR and not weather[0] in getClearStates():
           print('unknown weather condition {condition} detected, assuming clear condition'.format(condition = weather[0]))
+
+        self.weather_display.setWeatherIconFromURL(weather[1])
 
         self.weather_display.setLocation(weather[2])
 
