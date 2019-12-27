@@ -14,7 +14,8 @@ from PyQt5.QtWidgets import (
   QSlider, 
   QLineEdit,
   QVBoxLayout)
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QPalette
+from PyQt5.QtCore import Qt
 
 from config import MUSIC_PACKS_FOLDER
 from music_pack import MusicPack, MusicPackException
@@ -117,6 +118,11 @@ class MainWindow(QWidget):
     self.layout.addWidget(self.weather_display)
 
     self.setLayout(self.layout)
+
+    bg = QPalette()
+    bg.setColor(QPalette.Window, Qt.gray)
+
+    self.setPalette(bg)
 
     initialization_timer = QTimer(self)
     initialization_timer.setSingleShot(True)
